@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitness Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      margin: 0;
+      padding-top: 20px;
+    }
+
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      width: 340px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2, h3 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 10px;
+    }
+
+    li {
+      background: #f1f1f1;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .actions button {
+      width: auto;
+      padding: 5px 8px;
+      margin-left: 5px;
+    }
+
+    .edit { background: #2196F3; color: white; }
+    .delete { background: red; color: white; }
+
+    .section {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Fitness Tracker</h2>
+
+  <!-- Activity Section -->
+  <input type="text" id="activity" placeholder="Activity (e.g., Running)">
+  <input type="number" id="duration" placeholder="Minutes">
+  <button onclick="addActivity()">Add Activity</button>
+
+  <ul id="list"></ul>
+
+  <!-- Weight Tracker Section -->
+  <div class="section">
+    <h3>Weight Tracker</h3>
+    <input type="number" id="weight" placeholder="Enter weight (kg)">
+    <button onclick="addWeight()">Save Weight</button>
+
+    <ul id="weightList"></ul>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    renderActivities();
+    renderWeights();
+  });
+
+  // -------- ACTIVITY FUNCTIONS --------
+  function getActivities() {
+    return JSON.parse(localStorage.getItem('activities')) || [];
+  }
+
+  function saveActivities(data) {
+    localStorage.setItem('activities', JSON.stringify(data));
+  }
+
+  function renderActivities() {
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+
+    getActivities().forEach((item, index) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span>${item.activity} - ${item.duration} mins</span>
+        <div class="actions">
+          <button class="edit" onclick="editActivity(${index})">Edit</button>
+          <button class="delete" onclick="deleteActivity(${index})">X</button>
+        </div>`;
+      list.appendChild(li);
+    });
+  }
+
+  function addActivity() {
+    const activity = document.getElementById('activity').value;
+    const duration = document.getElementById('duration').value;
+
+    if (!activity || !duration || duration <= 0) {
+      alert('Please enter a valid activity and duration');
+      return;
+    }
+
+    const data = getActivities();
+    data.push({ activity, duration });
+    saveActivities(data);
+
+    renderActivities();
+    document.getElementById('activity').value = '';
+    document.getElementById('duration').value = '';
+  }
+
+  function editActivity(index) {
+    const data = getActivities();
+    const item = data[index];
+
+    const a = prompt('Edit activity:', item.activity);
+    const d = prompt('Edit duration:', item.duration);
+
+    if (a !== null && d !== null && a.trim() !== '' && d.trim() !== '') {
+      data[index] = { activity: a, duration: d };
+      saveActivities(data);
+      renderActivities();
+    }
+  }
+
+  function deleteActivity(index) {
+    const data = getActivities();
+    data.splice(index, 1);
+    saveActivities(data);
+    renderActivities();
+  }
+
+  // -------- WEIGHT FUNCTIONS --------
+  function getWeights() {
+    return JSON.parse(localStorage.getItem('weights')) || [];
+  }
+
+  function saveWeights(data) {
+    localStorage.setItem('weights', JSON.stringify(data));
+  }
+
+  function renderWeights() {
+    const list = document.getElementById('weightList');
+    list.innerHTML = '';
+
+    getWeights().forEach((item, index) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span>${item.weight} kg (${item.date})</span>
+        <button class="delete" onclick="deleteWeight(${index})">X</button>`;
+      list.appendChild(li);
+    });
+  }
+
+  function addWeight() {
+    const weightInput = document.getElementById('weight');
+    const weight = weightInput.value;
+
+    if (!weight || weight <= 0) {
+      alert('Please enter a valid weight');
+      return;
+    }
+
+    const data = getWeights();
+    const today = new Date().toLocaleDateString();
+
+    data.push({ weight, date: today });
+    saveWeights(data);
+
+    renderWeights();
+    weightInput.value = '';
+  }
+
+  function deleteWeight(index) {
+    const data = getWeights();
+    data.splice(index, 1);
+    saveWeights(data);
+    renderWeights();
+  }
+</script>
+
+</body>
+</html>
