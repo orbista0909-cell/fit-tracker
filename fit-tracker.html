@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=2.0">
   <title>Fitness Tracker</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,7 +12,7 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
       padding-top: 20px;
     }
@@ -20,7 +21,7 @@
       background: #fff;
       padding: 20px;
       border-radius: 12px;
-      width: 340px;
+      width: 360px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 
@@ -29,12 +30,13 @@
       margin-bottom: 10px;
     }
 
-    input, button {
+    input, button, select {
       width: 100%;
       padding: 10px;
       margin-top: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
+      box-sizing: border-box;
     }
 
     button {
@@ -46,6 +48,15 @@
 
     button:hover {
       background: #45a049;
+    }
+
+    .logout-btn {
+      background: #ff5722;
+      margin-bottom: 15px;
+    }
+
+    .logout-btn:hover {
+      background: #e64a19;
     }
 
     ul {
@@ -71,45 +82,162 @@
       margin-left: 5px;
     }
 
-    .edit { background: #2196F3; color: white; }
-    .delete { background: red; color: white; }
+    .edit {
+      background: #2196F3;
+      color: white;
+    }
+
+    .delete {
+      background: red;
+      color: white;
+    }
 
     .section {
       margin-top: 20px;
       padding-top: 10px;
       border-top: 1px solid #ddd;
     }
+
+    .hidden {
+      display: none;
+    }
+
+    .role-tag {
+      text-align: center;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
+
 <body>
 
-<div class="container">
+<!-- LOGIN SECTION -->
+<div class="container" id="loginContainer">
+  <h2>Login</h2>
+
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+
+  <p style="margin-top:15px; font-size:14px;">
+    <strong>Demo Accounts:</strong><br>
+    Admin → username: <b>admin</b> | password: <b>admin123</b><br>
+    User → username: <b>user</b> | password: <b>user123</b>
+  </p>
+</div>
+
+<!-- APP SECTION -->
+<div class="container hidden" id="appContainer">
+
+  <button class="logout-btn" onclick="logout()">Logout</button>
+
   <h2>Fitness Tracker</h2>
+
+  <div class="role-tag" id="roleDisplay"></div>
 
   <!-- Activity Section -->
   <input type="text" id="activity" placeholder="Activity (e.g., Running)">
   <input type="number" id="duration" placeholder="Minutes">
+
   <button onclick="addActivity()">Add Activity</button>
 
   <ul id="list"></ul>
 
-  <!-- Weight Tracker Section -->
+  <!-- Weight Tracker -->
   <div class="section">
     <h3>Weight Tracker</h3>
+
     <input type="number" id="weight" placeholder="Enter weight (kg)">
+
     <button onclick="addWeight()">Save Weight</button>
 
     <ul id="weightList"></ul>
   </div>
+
 </div>
 
 <script>
+
+  // ---------------- USERS ----------------
+  const users = [
+    {
+      username: "admin",
+      password: "admin123",
+      role: "admin"
+    },
+    {
+      username: "user",
+      password: "user123",
+      role: "user"
+    }
+  ];
+
+  let currentUser = null;
+
+  // ---------------- START ----------------
   document.addEventListener('DOMContentLoaded', () => {
-    renderActivities();
-    renderWeights();
+
+    const savedUser = JSON.parse(localStorage.getItem('loggedInUser'));
+
+    if (savedUser) {
+      currentUser = savedUser;
+      showApp();
+    }
+
   });
 
-  // -------- ACTIVITY FUNCTIONS --------
+  // ---------------- LOGIN ----------------
+  function login() {
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    const foundUser = users.find(user =>
+      user.username === username &&
+      user.password === password
+    );
+
+    if (!foundUser) {
+      alert("Invalid username or password");
+      return;
+    }
+
+    currentUser = foundUser;
+
+    localStorage.setItem(
+      'loggedInUser',
+      JSON.stringify(currentUser)
+    );
+
+    showApp();
+  }
+
+  function logout() {
+
+    localStorage.removeItem('loggedInUser');
+
+    currentUser = null;
+
+    document.getElementById('loginContainer').classList.remove('hidden');
+    document.getElementById('appContainer').classList.add('hidden');
+  }
+
+  function showApp() {
+
+    document.getElementById('loginContainer').classList.add('hidden');
+    document.getElementById('appContainer').classList.remove('hidden');
+
+    document.getElementById('roleDisplay').innerText =
+      "Logged in as: " + currentUser.role.toUpperCase();
+
+    renderActivities();
+    renderWeights();
+  }
+
+  // ---------------- ACTIVITY STORAGE ----------------
   function getActivities() {
     return JSON.parse(localStorage.getItem('activities')) || [];
   }
@@ -118,62 +246,7 @@
     localStorage.setItem('activities', JSON.stringify(data));
   }
 
-  function renderActivities() {
-    const list = document.getElementById('list');
-    list.innerHTML = '';
-
-    getActivities().forEach((item, index) => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <span>${item.activity} - ${item.duration} mins</span>
-        <div class="actions">
-          <button class="edit" onclick="editActivity(${index})">Edit</button>
-          <button class="delete" onclick="deleteActivity(${index})">X</button>
-        </div>`;
-      list.appendChild(li);
-    });
-  }
-
-  function addActivity() {
-    const activity = document.getElementById('activity').value;
-    const duration = document.getElementById('duration').value;
-
-    if (!activity || !duration || duration <= 0) {
-      alert('Please enter a valid activity and duration');
-      return;
-    }
-
-    const data = getActivities();
-    data.push({ activity, duration });
-    saveActivities(data);
-
-    renderActivities();
-    document.getElementById('activity').value = '';
-    document.getElementById('duration').value = '';
-  }
-
-  function editActivity(index) {
-    const data = getActivities();
-    const item = data[index];
-
-    const a = prompt('Edit activity:', item.activity);
-    const d = prompt('Edit duration:', item.duration);
-
-    if (a !== null && d !== null && a.trim() !== '' && d.trim() !== '') {
-      data[index] = { activity: a, duration: d };
-      saveActivities(data);
-      renderActivities();
-    }
-  }
-
-  function deleteActivity(index) {
-    const data = getActivities();
-    data.splice(index, 1);
-    saveActivities(data);
-    renderActivities();
-  }
-
-  // -------- WEIGHT FUNCTIONS --------
+  // ---------------- WEIGHT STORAGE ----------------
   function getWeights() {
     return JSON.parse(localStorage.getItem('weights')) || [];
   }
@@ -182,44 +255,219 @@
     localStorage.setItem('weights', JSON.stringify(data));
   }
 
-  function renderWeights() {
-    const list = document.getElementById('weightList');
+  // ---------------- RENDER ACTIVITIES ----------------
+  function renderActivities() {
+
+    const list = document.getElementById('list');
+
     list.innerHTML = '';
 
-    getWeights().forEach((item, index) => {
+    getActivities().forEach((item, index) => {
+
       const li = document.createElement('li');
+
+      let buttons = '';
+
+      // Admin can edit/delete
+      if (currentUser.role === 'admin') {
+
+        buttons = `
+          <div class="actions">
+            <button class="edit"
+              onclick="editActivity(${index})">
+              Edit
+            </button>
+
+            <button class="delete"
+              onclick="deleteActivity(${index})">
+              X
+            </button>
+          </div>
+        `;
+      }
+
       li.innerHTML = `
-        <span>${item.weight} kg (${item.date})</span>
-        <button class="delete" onclick="deleteWeight(${index})">X</button>`;
+        <span>
+          ${item.activity} - ${item.duration} mins
+        </span>
+
+        ${buttons}
+      `;
+
       list.appendChild(li);
     });
   }
 
+  // ---------------- ADD ACTIVITY ----------------
+  function addActivity() {
+
+    const activity =
+      document.getElementById('activity').value;
+
+    const duration =
+      document.getElementById('duration').value;
+
+    if (!activity || !duration || duration <= 0) {
+
+      alert('Please enter a valid activity and duration');
+
+      return;
+    }
+
+    const data = getActivities();
+
+    data.push({
+      activity,
+      duration
+    });
+
+    saveActivities(data);
+
+    renderActivities();
+
+    document.getElementById('activity').value = '';
+    document.getElementById('duration').value = '';
+  }
+
+  // ---------------- EDIT ACTIVITY ----------------
+  function editActivity(index) {
+
+    if (currentUser.role !== 'admin') {
+      alert("Only admin can edit activities");
+      return;
+    }
+
+    const data = getActivities();
+
+    const item = data[index];
+
+    const a = prompt('Edit activity:', item.activity);
+
+    const d = prompt('Edit duration:', item.duration);
+
+    if (
+      a !== null &&
+      d !== null &&
+      a.trim() !== '' &&
+      d.trim() !== ''
+    ) {
+
+      data[index] = {
+        activity: a,
+        duration: d
+      };
+
+      saveActivities(data);
+
+      renderActivities();
+    }
+  }
+
+  // ---------------- DELETE ACTIVITY ----------------
+  function deleteActivity(index) {
+
+    if (currentUser.role !== 'admin') {
+      alert("Only admin can delete activities");
+      return;
+    }
+
+    const data = getActivities();
+
+    data.splice(index, 1);
+
+    saveActivities(data);
+
+    renderActivities();
+  }
+
+  // ---------------- RENDER WEIGHTS ----------------
+  function renderWeights() {
+
+    const list =
+      document.getElementById('weightList');
+
+    list.innerHTML = '';
+
+    getWeights().forEach((item, index) => {
+
+      const li = document.createElement('li');
+
+      let deleteBtn = '';
+
+      // Admin can delete weights
+      if (currentUser.role === 'admin') {
+
+        deleteBtn = `
+          <button class="delete"
+            onclick="deleteWeight(${index})">
+            X
+          </button>
+        `;
+      }
+
+      li.innerHTML = `
+        <span>
+          ${item.weight} kg (${item.date})
+        </span>
+
+        ${deleteBtn}
+      `;
+
+      list.appendChild(li);
+    });
+  }
+
+  // ---------------- ADD WEIGHT ----------------
   function addWeight() {
-    const weightInput = document.getElementById('weight');
+
+    const weightInput =
+      document.getElementById('weight');
+
     const weight = weightInput.value;
 
     if (!weight || weight <= 0) {
+
       alert('Please enter a valid weight');
+
       return;
     }
 
     const data = getWeights();
-    const today = new Date().toLocaleDateString();
 
-    data.push({ weight, date: today });
+    const today =
+      new Date().toLocaleDateString();
+
+    data.push({
+      weight,
+      date: today
+    });
+
     saveWeights(data);
 
     renderWeights();
+
     weightInput.value = '';
   }
 
+  // ---------------- DELETE WEIGHT ----------------
   function deleteWeight(index) {
+
+    if (currentUser.role !== 'admin') {
+
+      alert("Only admin can delete weights");
+
+      return;
+    }
+
     const data = getWeights();
+
     data.splice(index, 1);
+
     saveWeights(data);
+
     renderWeights();
   }
+
 </script>
 
 </body>
